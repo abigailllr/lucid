@@ -8,6 +8,8 @@ class Settings(BaseSettings):
 
     default_provider: str = "anthropic"
 
+    cors_origins: str = "*"
+
     anthropic_model: str = "claude-opus-4-8"
     openai_model: str = "gpt-4o"
     gemini_model: str = "gemini-1.5-pro"

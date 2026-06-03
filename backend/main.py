@@ -40,9 +40,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="lucid", lifespan=lifespan)
 
+_cors_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins or ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
