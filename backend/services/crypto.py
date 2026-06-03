@@ -37,10 +37,28 @@ def _unpad(data: bytes) -> bytes:
     return data[4:4 + length]
 
 
+_REPLAY_WINDOW = 256
+
+
 class SecureChannel:
     def __init__(self, root: bytes) -> None:
         self._root = root
         self._send_counter = 0
+        self._recv_high: dict[str, int] = {}
+        self._recv_seen: dict[str, set[int]] = {}
+
+    def _accept_counter(self, direction: str, n: int) -> None:
+        high = self._recv_high.get(direction, -1)
+        if n <= high - _REPLAY_WINDOW:
+            raise ValueError("message counter too old (possible replay)")
+        seen = self._recv_seen.setdefault(direction, set())
+        if n in seen:
+            raise ValueError("message counter already used (replay)")
+        seen.add(n)
+        if n > high:
+            high = n
+            self._recv_high[direction] = high
+        seen.difference_update({c for c in seen if c <= high - _REPLAY_WINDOW})
 
     def encrypt(self, plaintext: bytes, direction: str) -> dict:
         counter = self._send_counter
@@ -56,7 +74,10 @@ class SecureChannel:
         }
 
     def decrypt(self, envelope: dict, direction: str) -> bytes:
-        key = _message_key(self._root, direction, int(envelope["n"]))
+        n = int(envelope["n"])
+        key = _message_key(self._root, direction, n)
         iv = base64.b64decode(envelope["iv"])
         ciphertext = base64.b64decode(envelope["ct"])
-        return _unpad(AESGCM(key).decrypt(iv, ciphertext, None))
+        plaintext = AESGCM(key).decrypt(iv, ciphertext, None)
+        self._accept_counter(direction, n)
+        return _unpad(plaintext)

@@ -36,7 +36,7 @@ def _collect(results) -> list[tuple[str, LucidSolution]]:
 
 
 def _texts(candidates: list[tuple[str, LucidSolution]]) -> list[str]:
-    return [f"{name}: {sol.hud_text}. {sol.solution}" for name, sol in candidates]
+    return [f"{name}: {sol.hud_text}. {sol.detail}" for name, sol in candidates]
 
 
 def _build(winner: tuple[str, LucidSolution], candidates, agreement_score: float, debated: bool) -> dict:
@@ -80,7 +80,7 @@ async def solve_ensemble(
         winner = max(first, key=lambda c: c[1].confidence)
         return _build(winner, first, agreement_score, debated=False)
 
-    payload = [{"provider": n, "hud_text": s.hud_text, "solution": s.solution} for n, s in first]
+    payload = [{"provider": n, "hud_text": s.hud_text, "detail": s.detail} for n, s in first]
     second = _collect(
         await asyncio.gather(
             *[

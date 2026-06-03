@@ -1,25 +1,24 @@
 from pydantic import BaseModel
 
 LUCID_SYSTEM = (
-    "You are Lucid, the intelligence behind a pair of camera glasses. "
-    "The wearer presses a button and you receive whatever was in front of them: "
-    "a math problem, an exam question, a multiple-choice sheet, a line of code, "
-    "a form, a sign in another language, a broken device. "
-    "Your job, in order: decide what actually needs solving in the frame, "
-    "solve it correctly, then write hud_text, the single answer to display on a "
-    "tiny screen inside the lens. "
-    "The wearer cannot scroll and is reading discreetly, so hud_text must be the "
-    "bottom-line result, answer first, 120 characters maximum. "
-    "For multiple choice, hud_text is just the letter and the option. "
-    "Put the full reasoning in solution, never in hud_text. "
-    "If the frame is too blurry or empty to solve, say so in hud_text and set low confidence."
+    "You are Lucid, the intelligence behind a pair of assistive camera glasses. "
+    "The wearer points at something and you receive the frame in front of them: "
+    "a street sign, a restaurant menu, a product label, a page of text, a foreign "
+    "phrase, a device they are trying to operate. "
+    "Your job, in order: decide what in the frame is most useful to the wearer, "
+    "understand it, then write hud_text - the single line shown on the small in-lens "
+    "display and read aloud. "
+    "The wearer cannot scroll, so hud_text is the bottom line first, 120 characters "
+    "maximum: the translation, the key fact, or the next step. "
+    "Put the fuller explanation in detail, never in hud_text. "
+    "If the frame is too blurry or empty to read, say so in hud_text and set low confidence."
 )
 
 
 class LucidSolution(BaseModel):
-    problem_type: str
+    kind: str
     summary: str
-    solution: str
+    detail: str
     hud_text: str
     confidence: float
 
@@ -35,7 +34,7 @@ def build_user_text(
     if translate_to:
         parts.append(
             f"Translation task: translate the text in the frame into {translate_to}. "
-            "Put only the translation in hud_text and set problem_type to 'translation'."
+            "Put only the translation in hud_text and set kind to 'translation'."
         )
     if notes:
         joined = "\n".join(f"- {note}" for note in notes)
@@ -45,14 +44,14 @@ def build_user_text(
         )
     if ocr_text:
         parts.append(
-            "Handwriting OCR extracted from the frame (use it to disambiguate messy "
-            f"strokes; trust the image if they disagree):\n{ocr_text}"
+            "Text recognition extracted from the frame (use it to disambiguate messy or "
+            f"low-contrast text; trust the image if they disagree):\n{ocr_text}"
         )
     if mode:
         parts.append(f"The wearer set the session focus to: {mode}. Read the scene through that lens first.")
     if peer_answers:
         listed = "\n".join(
-            f"- {p['provider']} answered '{p['hud_text']}' because: {p['solution']}" for p in peer_answers
+            f"- {p['provider']} answered '{p['hud_text']}' because: {p['detail']}" for p in peer_answers
         )
         parts.append(
             "Other AI models examined the exact same frame and proposed:\n"
@@ -60,5 +59,5 @@ def build_user_text(
             "Reconsider carefully. If one of them exposes a mistake in your reading, correct it. "
             "If you are still confident you are right, keep your answer. Output your best final answer."
         )
-    parts.append("Identify what should be solved, solve it, and fill the schema.")
+    parts.append("Identify what is most useful in the frame, understand it, and fill the schema.")
     return "\n\n".join(parts)

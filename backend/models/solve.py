@@ -42,9 +42,9 @@ class CandidateAnswer(BaseModel):
 
 
 class SolveResponse(BaseModel):
-    problem_type: str
+    kind: str
     summary: str
-    solution: str
+    detail: str
     hud_text: str
     confidence: float
     provider: str
